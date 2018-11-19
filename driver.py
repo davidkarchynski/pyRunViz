@@ -34,7 +34,11 @@ def inject_profiling_code(filename):
     return
 
 def parse_input(lines):
+    # todo generate the json here
+    
     for x in lines:
         print(x)
+
+
 
 main()
