@@ -20,15 +20,40 @@ def main():
         print("File", filename, "does not exists or has an invalid extension.")
         return
 
-    result = subprocess.run(['py', filename], stdout=subprocess.PIPE, shell=True)
+    profile_fname = inject_profiling_code(filename)
+
+    # use this for Windows:
+    # result = subprocess.run(['py', filename], stdout=subprocess.PIPE, shell=True)
+    result = subprocess.run(['python3', profile_fname], stdout=subprocess.PIPE)
+
     result_json = parse_result(result)
+
+    try:
+        os.remove(profile_fname)
+    except OSError:
+        pass
+
     print (result_json)
 
 
 def inject_profiling_code(filename):
-    # todo read in filename and inject the profiling code from profile.py into it
-    # then save it as filename_profile.py
-    return
+    fout_name = "profile_" + filename
+
+    prof_file = open("profile.py", "r")
+    source_file = open(filename, "r")
+    output_file = open(fout_name, "w")
+
+    source_code = source_file.read()
+    prof_code = prof_file.read()
+    source_file.close()
+    prof_file.close()
+
+    output_file.write("\n")
+    output_file.write(source_code)
+    output_file.write(prof_code)
+
+    output_file.close()
+    return fout_name
 
 def parse_result(result):
     lines = result.stdout.decode('utf-8').split("\n")
@@ -43,7 +68,6 @@ def parse_result(result):
 
     parse_input(lines)
     return create_json()
-
 
 def parse_input(lines):
     for line in lines:
