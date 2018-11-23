@@ -4,9 +4,21 @@ import sys
 from pathlib import Path
 from functools import reduce
 import json
+import inspect
 
 nodes_list = []
 links_list = []
+
+class Node:
+    total_time = 0
+    average_time = 0
+    def __init__(self, name, children, timespent):
+        self.name = name
+        self.children = children
+        self.timespent = timespent
+
+    def __repr__(self):
+        return " Children:" + str(len(self.children)) + " total_time: " + repr(self.total_time) + "average: " + repr(self.average_time) + "\n"
 
 def main():
     if len(sys.argv) != 2:
@@ -33,7 +45,7 @@ def main():
     except OSError:
         pass
 
-    print (result_json)
+    # print (result_json)
 
 
 def inject_profiling_code(filename):
@@ -66,14 +78,42 @@ def parse_result(result):
     lines.reverse()
     lines.pop(0)
 
+    for line in lines:
+        print(line)
     parse_input(lines)
-    return create_json()
+    # return create_json()
 
 def parse_input(lines):
+    nodes = {}
     for line in lines:
-        caller, name, timespent = line.split('|')
-        log_node(name, timespent)
-        log_link(caller, name)
+        node_name, timespent = line.split('~')
+        call_stack = node_name.split('|')
+
+        if node_name in nodes:
+            node = nodes[node_name]
+            node.timespent.append(timespent)
+            continue
+
+        node = Node(node_name, [], [timespent])
+        nodes[node_name] = node
+
+        if len(call_stack) <= 1:
+            # no parent
+            continue
+        
+        call_stack.pop()
+        parentName = "|".join(call_stack)
+
+        parent = nodes[parentName]
+        parent.children.append(node)
+
+    for key, node in nodes.items():
+        times = list(map((lambda x: float(x)), node.timespent))
+        node.total_time = reduce((lambda a, b: a + b), times)
+        node.average_time = node.total_time / len(times)
+        node.times = []
+
+    print(nodes)
 
 # Helper methods for JSON
 def log_link(from_node, to_node):
@@ -93,7 +133,7 @@ def create_nodes_dictionary():
         all_element_sizes = list(map((lambda x: float(x[1])), all_element_n))
         sum_element_n = reduce((lambda a, b: a + b), all_element_sizes)
         avg_element_n = sum_element_n / len(all_element_n)
-        results.append({"id": n, "size": avg_element_n})
+        results.append({"id": n, "average_time": avg_element_n, "total_time": sum_element_n})
     return results
 
 def create_links_dictionary():
@@ -106,6 +146,14 @@ def create_links_dictionary():
     return results
 
 def create_json():
+    # s = inspect.stack()
+    # stack_str = ""
+
+    # for entry in s:
+    #     stack_str = entry.function + "->" + stack_str
+
+    # print(stack_str)
+
     nodes_dictionary = create_nodes_dictionary()
     links_dictionary = create_links_dictionary()
     results_object = {
