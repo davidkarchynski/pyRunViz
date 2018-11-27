@@ -106,11 +106,26 @@ def parse_input(lines):
         parent = nodes[parentName]
         parent.children.append(node)
 
-    for key, node in nodes.items():
+    output_start = 0
+    output_end = 50
+    input_start = 0
+    input_end = 0
+
+    for key, n in nodes.items():
+        node = nodes[key]
         times = list(map((lambda x: float(x)), node.timespent))
         node.total_time = reduce((lambda a, b: a + b), times)
         node.average_time = node.total_time / len(times)
         del node.timespent
+
+        node_name = node.name.split('|').pop()
+        node.name = node_name
+
+        input_end = max(input_end, node.total_time)
+
+    for key, node in nodes.items():
+        node.size = map_range(input_start, input_end, output_start, output_end, node.total_time)
+        node.size2 = map_range(input_start, input_end, output_start, output_end, node.average_time)
 
     return json.dumps(nodes["main"], default=lambda x: x.__dict__)
 
@@ -119,52 +134,9 @@ def write_json(data):
     output_file.write(data)
     output_file.close
 
+def map_range(input_start, input_end, output_start, output_end, value):
+    slope = 1.0 * (output_end - output_start) / (input_end - input_start)
+    output = output_start + slope * (value - input_start)
+    return output
+
 main()
-
-# # Helper methods for JSON
-# def log_link(from_node, to_node):
-#     links_list.append((from_node, to_node))
-
-# def log_node(node, t):
-#     nodes_list.append((node, t))
-
-# def create_nodes_dictionary():
-#     results = []
-
-#     all_nodes = list(map((lambda x: x[0]), nodes_list))
-#     all_nodes = list(set(all_nodes))
-
-#     for n in all_nodes:
-#         all_element_n = list(filter((lambda x: x[0] == n), nodes_list))
-#         all_element_sizes = list(map((lambda x: float(x[1])), all_element_n))
-#         sum_element_n = reduce((lambda a, b: a + b), all_element_sizes)
-#         avg_element_n = sum_element_n / len(all_element_n)
-#         results.append({"id": n, "average_time": avg_element_n, "total_time": sum_element_n})
-#     return results
-
-# def create_links_dictionary():
-#     results = []
-#     all_links = set(links_list)
-
-#     for l in all_links:
-#         count_l = links_list.count(l)
-#         results.append({"source": l[0], "target": l[1], "value": count_l})
-#     return results
-
-# def create_json():
-#     # s = inspect.stack()
-#     # stack_str = ""
-
-#     # for entry in s:
-#     #     stack_str = entry.function + "->" + stack_str
-
-#     # print(stack_str)
-
-#     nodes_dictionary = create_nodes_dictionary()
-#     links_dictionary = create_links_dictionary()
-#     results_object = {
-#         "nodes": nodes_dictionary,
-#         "links": links_dictionary
-#     }
-#     results_json = json.dumps(results_object)
-#     return results_json
