@@ -106,7 +106,7 @@ def parse_input(lines):
         parent = nodes[parentName]
         parent.children.append(node)
 
-    output_start = 0
+    output_start = 5
     output_end = 50
     input_start = 0
     input_end = 0
